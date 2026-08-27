@@ -204,7 +204,8 @@
       <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button>
     </div>
-    <button class="btn btn-danger" style="width:100%; margin-top:10px; display:none;" id="btnExcluirLanc" onclick="excluirLancamento()">Excluir lançamento</button>
+    <div id="avisoExcluirLanc" style="display:none; text-align:center; font-size:12px; color:var(--danger); margin-top:14px;">⚠ Essa ação não pode ser desfeita</div>
+    <button class="btn btn-danger" style="width:100%; margin-top:8px; display:none;" id="btnExcluirLanc" onclick="excluirLancamento()">Excluir lançamento</button>
   </div>
 </div>
 
@@ -484,6 +485,7 @@ function abrirModalLancamento(id){
   editandoLancId = id || null;
   document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
   document.getElementById('btnExcluirLanc').style.display = id ? 'block' : 'none';
+  document.getElementById('avisoExcluirLanc').style.display = id ? 'block' : 'none';
   if(id){
     const l = lancamentos.find(x=>x.id===id);
     setTipo(l.tipo);
@@ -531,6 +533,7 @@ function salvarLancamento(){
 
 function excluirLancamento(){
   if(!editandoLancId) return;
+  if(!confirm('Tem certeza que quer excluir este lançamento? Essa ação não pode ser desfeita.')) return;
   db.collection('lancamentos').doc(editandoLancId).delete().then(()=>{
     fecharModalLancamento();
     mostrarToast('Lançamento excluído');
