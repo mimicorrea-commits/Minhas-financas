@@ -172,7 +172,7 @@
   </div>
 </div>
 
-<button class="fab" id="fab" onclick="abrirModalLancamento()">+</button>
+<button class="fab" id="fab" onclick="abrirModalLancamento()" style="display:none;">+</button>
 
 <!-- Modal Lançamento -->
 <div class="modal-overlay" id="modalLancamento">
@@ -254,6 +254,7 @@ let editandoLancId = null;
 function sair(){
   sessionStorage.removeItem('mf_auth');
   document.getElementById('app').style.display='none';
+  document.getElementById('fab').style.display='none';
   document.getElementById('gate').style.display='flex';
   document.getElementById('senhaInput').value='';
 }
@@ -264,6 +265,7 @@ function entrar(){
     sessionStorage.setItem('mf_auth','1');
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='block';
+    document.getElementById('fab').style.display='block';
     iniciarApp();
   } else {
     document.getElementById('senhaErro').style.display='block';
@@ -274,6 +276,7 @@ window.onload = function(){
   if(sessionStorage.getItem('mf_auth') === '1'){
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='block';
+    document.getElementById('fab').style.display='block';
     iniciarApp();
   }
   CATEGORIAS.forEach(c=>{
