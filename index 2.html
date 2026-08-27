@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Minhas Finanças</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --card:#141414;
+    --card-2:#1a1a1a;
+    --border:rgba(255,255,255,0.08);
+    --accent:#34d399;
+    --accent-dim:rgba(52,211,153,0.12);
+    --danger:#f87171;
+    --danger-dim:rgba(248,113,113,0.12);
+    --text:#f5f5f5;
+    --text-dim:#8a8a8a;
+    --text-faint:#5a5a5a;
+    --radius:20px;
+    --radius-sm:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Poppins',sans-serif; font-weight:400;
+    min-height:100vh; padding-bottom:100px;
+  }
+  .wrap{max-width:480px; margin:0 auto; padding:20px 16px 0;}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+  header h1{font-size:22px; font-weight:600; margin:0;}
+  header .sub{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .tabs{display:flex; gap:8px; margin-bottom:18px; background:var(--card); border:1px solid var(--border); border-radius:100px; padding:4px;}
+  .tab{flex:1; text-align:center; padding:10px 0; border-radius:100px; font-size:14px; font-weight:500; color:var(--text-dim); cursor:pointer; transition:all .15s;}
+  .tab.active{background:var(--accent); color:#04120c;}
+  .month-nav{display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:16px;}
+  .month-nav button{background:var(--card); border:1px solid var(--border); color:var(--text); width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer;}
+  .month-nav span{font-size:15px; font-weight:600; min-width:150px; text-align:center; text-transform:capitalize;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:12px;}
+  .label{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;}
+  .big-value{font-size:30px; font-weight:600;}
+  .row-2{display:flex; gap:12px;}
+  .row-2 .card{flex:1;}
+  .mid-value{font-size:22px; font-weight:600;}
+  .green{color:var(--accent);}
+  .red{color:var(--danger);}
+  .search-row{display:flex; gap:10px; margin-bottom:12px;}
+  .search-box{flex:1; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; color:var(--text); font-family:inherit; font-size:14px;}
+  .search-box::placeholder{color:var(--text-faint);}
+  .filters{display:flex; gap:8px; overflow-x:auto; margin-bottom:18px; padding-bottom:4px;}
+  .filters::-webkit-scrollbar{display:none;}
+  .filter-chip{white-space:nowrap; padding:9px 16px; border-radius:100px; border:1px solid var(--border); background:var(--card); color:var(--text-dim); font-size:13px; font-weight:500; cursor:pointer;}
+  .filter-chip.active{background:#fff; color:#0a0a0a; border-color:#fff;}
+  .day-group{margin-bottom:14px;}
+  .day-header{display:flex; justify-content:space-between; font-size:11px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; padding:0 2px;}
+  .item{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:8px; cursor:pointer;}
+  .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .dot.entrada{background:var(--accent);}
+  .dot.saida{background:var(--danger);}
+  .item-info{flex:1; min-width:0;}
+  .item-desc{font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .item-cat{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; margin-top:2px;}
+  .item-right{text-align:right; flex-shrink:0;}
+  .item-value{font-size:15px; font-weight:600;}
+  .badge{display:inline-block; margin-top:6px; font-size:10px; padding:3px 9px; border-radius:100px; font-weight:600; letter-spacing:.5px;}
+  .badge.pago{background:var(--accent-dim); color:var(--accent);}
+  .badge.pendente{background:rgba(255,255,255,0.08); color:var(--text-dim);}
+  .card.filtro-ativo{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .cat-row{margin-bottom:16px;}
+  .cat-row-top{display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;}
+  .cat-row-nome{font-weight:500;}
+  .cat-row-valor{color:var(--text-dim); font-size:13px;}
+  .cat-bar-bg{background:var(--card-2); border-radius:100px; height:10px; overflow:hidden;}
+  .cat-bar-fill{height:100%; border-radius:100px; background:var(--danger);}
+  .cat-bar-fill.entrada{background:var(--accent);}
+  .empty{text-align:center; color:var(--text-dim); font-size:14px; padding:40px 0;}
+  .fab{position:fixed; bottom:24px; right:24px; width:58px; height:58px; border-radius:50%; background:var(--accent); color:#04120c; font-size:28px; border:none; box-shadow:0 8px 24px rgba(52,211,153,0.35); cursor:pointer; z-index:20;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:flex-end; z-index:50;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#111; border-top-left-radius:24px; border-top-right-radius:24px; width:100%; max-width:480px; margin:0 auto; padding:24px 20px 32px; max-height:88vh; overflow-y:auto;}
+  .modal h2{margin:0 0 18px; font-size:18px; font-weight:600;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px;}
+  .field input, .field select, .field textarea{width:100%; background:var(--card-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; color:var(--text); font-family:inherit; font-size:15px;}
+  .field textarea{resize:vertical; min-height:60px;}
+  .toggle-2{display:flex; gap:8px;}
+  .toggle-2 div{flex:1; text-align:center; padding:12px 0; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--card-2); color:var(--text-dim); font-size:14px; font-weight:500; cursor:pointer;}
+  .toggle-2 div.active-entrada{background:var(--accent-dim); border-color:var(--accent); color:var(--accent);}
+  .toggle-2 div.active-saida{background:var(--danger-dim); border-color:var(--danger); color:var(--danger);}
+  .modal-actions{display:flex; gap:10px; margin-top:20px;}
+  .btn{flex:1; padding:14px 0; border-radius:var(--radius-sm); border:none; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;}
+  .btn-primary{background:var(--accent); color:#04120c;}
+  .btn-secondary{background:var(--card-2); color:var(--text); border:1px solid var(--border);}
+  .btn-danger{background:var(--danger-dim); color:var(--danger);}
+  .gate{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .gate .card{width:100%; max-width:320px; text-align:center;}
+  .gate input{width:100%; margin:16px 0; text-align:center; letter-spacing:4px; font-size:18px;}
+  .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--border); padding:10px 20px; border-radius:100px; font-size:13px; z-index:60; opacity:0; transition:opacity .2s;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="card">
+    <div class="label">Minhas Finanças</div>
+    <div style="font-size:14px;color:var(--text-dim)">Digite sua senha de acesso</div>
+    <input id="senhaInput" type="password" placeholder="••••••">
+    <button class="btn btn-primary" style="width:100%" onclick="entrar()">Entrar</button>
+    <div id="senhaErro" style="color:var(--danger); font-size:12px; margin-top:10px; display:none;">Senha incorreta</div>
+  </div>
+</div>
+
+<div id="app" class="wrap" style="display:none;">
+  <header>
+    <div>
+      <h1>Minhas Finanças</h1>
+      <div class="sub" id="headerSub">carregando...</div>
+    </div>
+  </header>
+
+  <div id="viewLancamentos">
+    <div class="month-nav">
+      <button onclick="mudarMes(-1)">‹</button>
+      <span id="mesLabel"></span>
+      <button onclick="mudarMes(1)">›</button>
+    </div>
+
+    <div class="card">
+      <div class="label">Saldo do período</div>
+      <div class="big-value green" id="saldoPeriodo">R$ 0,00</div>
+    </div>
+
+    <div class="row-2">
+      <div class="card" id="cardEntradas" onclick="toggleFiltroTipo('entrada')" style="cursor:pointer;">
+        <div class="label">Entradas ↑</div>
+        <div class="mid-value green" id="totalEntradas">R$ 0,00</div>
+      </div>
+      <div class="card" id="cardSaidas" onclick="toggleFiltroTipo('saida')" style="cursor:pointer;">
+        <div class="label">Saídas ↓</div>
+        <div class="mid-value red" id="totalSaidas">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="tabs" style="margin-bottom:16px;">
+      <div class="tab active" id="visaoLista" onclick="mudarVisao('lista')">Lista</div>
+      <div class="tab" id="visaoCategoria" onclick="mudarVisao('categoria')">Por categoria</div>
+    </div>
+
+    <div id="blocoLista">
+    <div class="search-row">
+      <input class="search-box" id="buscaInput" placeholder="Buscar lançamento..." oninput="renderLancamentos()">
+    </div>
+
+    <div class="filters" id="filtros">
+      <div class="filter-chip active" data-f="todos" onclick="setFiltro('todos')">Todos</div>
+      <div class="filter-chip" data-f="pago" onclick="setFiltro('pago')">Pago</div>
+      <div class="filter-chip" data-f="a_pagar" onclick="setFiltro('a_pagar')">A pagar</div>
+      <div class="filter-chip" data-f="recebido" onclick="setFiltro('recebido')">Recebido</div>
+      <div class="filter-chip" data-f="a_receber" onclick="setFiltro('a_receber')">A receber</div>
+    </div>
+
+    <div id="listaLancamentos"></div>
+    </div>
+
+    <div id="blocoCategoria" style="display:none;">
+      <div id="listaCategorias"></div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="abrirModalLancamento()">+</button>
+
+<!-- Modal Lançamento -->
+<div class="modal-overlay" id="modalLancamento">
+  <div class="modal">
+    <h2 id="modalLancTitulo">Novo lançamento</h2>
+    <div class="toggle-2">
+      <div id="btnEntrada" onclick="setTipo('entrada')">Entrada</div>
+      <div id="btnSaida" onclick="setTipo('saida')">Saída</div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Descrição</label>
+      <input id="fDescricao" type="text" placeholder="Ex: Supermercado">
+    </div>
+    <div class="field">
+      <label>Valor (R$)</label>
+      <input id="fValor" type="number" step="0.01" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Categoria</label>
+      <select id="fCategoria"></select>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input id="fData" type="date">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="fStatus"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button>
+    </div>
+    <button class="btn btn-danger" style="width:100%; margin-top:10px; display:none;" id="btnExcluirLanc" onclick="excluirLancamento()">Excluir lançamento</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+/* =========================================================
+   CONFIGURAÇÃO — preencher com as credenciais do projeto
+   Firebase NOVO (separado do projeto da clínica e da padaria).
+   Pegue em: console.firebase.google.com > Configurações do
+   projeto > Geral > Seus apps > Web (ícone </>).
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBUSEd_MQjxQUOPyc_n2gI6WixX87ldrr4",
+  authDomain: "app-michelle-3d752.firebaseapp.com",
+  projectId: "app-michelle-3d752",
+  storageBucket: "app-michelle-3d752.firebasestorage.app",
+  messagingSenderId: "558169715114",
+  appId: "1:558169715114:web:c55cdb68dc95729e95bbd3"
+};
+
+/* Senha de acesso ao app — troque para o que quiser */
+const SENHA_APP = "0430";
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const CATEGORIAS = [
+  "Moradia","Alimentação","Transporte","Saúde","Beleza/Estética","Lazer",
+  "Educação","Compras","Assinaturas","Cartão de Crédito","Salário/Renda","Outros"
+];
+
+let lancamentos = [];
+let filtroAtual = "todos";
+let filtroTipo = "todos";
+let visaoAtual = "lista";
+let mesAtual = new Date().getMonth();
+let anoAtual = new Date().getFullYear();
+let tipoSelecionado = "entrada";
+let editandoLancId = null;
+
+function entrar(){
+  const val = document.getElementById('senhaInput').value;
+  if(val === SENHA_APP){
+    sessionStorage.setItem('mf_auth','1');
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    iniciarApp();
+  } else {
+    document.getElementById('senhaErro').style.display='block';
+  }
+}
+
+window.onload = function(){
+  if(sessionStorage.getItem('mf_auth') === '1'){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    iniciarApp();
+  }
+  CATEGORIAS.forEach(c=>{
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    document.getElementById('fCategoria').appendChild(o);
+  });
+};
+
+function iniciarApp(){
+  document.getElementById('headerSub').textContent = 'sincronizado';
+  escutarLancamentos();
+  atualizarMesLabel();
+}
+
+function escutarLancamentos(){
+  db.collection('lancamentos').onSnapshot(snap=>{
+    lancamentos = [];
+    snap.forEach(doc=> lancamentos.push({id:doc.id, ...doc.data()}));
+    renderLancamentos();
+    if(visaoAtual==='categoria') renderCategorias();
+  }, err=>{
+    document.getElementById('headerSub').textContent = 'erro de conexão — confira as credenciais';
+  });
+}
+
+function mudarMes(delta){
+  mesAtual += delta;
+  if(mesAtual > 11){ mesAtual = 0; anoAtual++; }
+  if(mesAtual < 0){ mesAtual = 11; anoAtual--; }
+  atualizarMesLabel();
+  renderLancamentos();
+  if(visaoAtual==='categoria') renderCategorias();
+}
+
+function atualizarMesLabel(){
+  const nomes = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  document.getElementById('mesLabel').textContent = nomes[mesAtual] + " de " + anoAtual;
+}
+
+function setFiltro(f){
+  filtroAtual = f;
+  document.querySelectorAll('.filter-chip').forEach(el=> el.classList.toggle('active', el.dataset.f===f));
+  renderLancamentos();
+}
+
+function fmtMoeda(v){
+  return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function toggleFiltroTipo(tipo){
+  filtroTipo = (filtroTipo === tipo) ? "todos" : tipo;
+  document.getElementById('cardEntradas').classList.toggle('filtro-ativo', filtroTipo==='entrada');
+  document.getElementById('cardSaidas').classList.toggle('filtro-ativo', filtroTipo==='saida');
+  renderLancamentos();
+}
+
+function mudarVisao(v){
+  visaoAtual = v;
+  document.getElementById('visaoLista').classList.toggle('active', v==='lista');
+  document.getElementById('visaoCategoria').classList.toggle('active', v==='categoria');
+  document.getElementById('blocoLista').style.display = v==='lista' ? 'block':'none';
+  document.getElementById('blocoCategoria').style.display = v==='categoria' ? 'block':'none';
+  if(v==='categoria') renderCategorias();
+}
+
+function renderCategorias(){
+  const doMes = lancamentos.filter(l=>{
+    const d = new Date(l.data + 'T00:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  });
+
+  const totais = {};
+  doMes.forEach(l=>{
+    if(!totais[l.categoria]) totais[l.categoria] = {entrada:0, saida:0};
+    totais[l.categoria][l.tipo] += Number(l.valor);
+  });
+
+  const cont = document.getElementById('listaCategorias');
+  cont.innerHTML = '';
+
+  const categorias = Object.keys(totais);
+  if(categorias.length===0){
+    cont.innerHTML = '<div class="empty">Nenhum lançamento neste mês</div>';
+    return;
+  }
+
+  const maxSaida = Math.max(...categorias.map(c=>totais[c].saida), 1);
+  const maxEntrada = Math.max(...categorias.map(c=>totais[c].entrada), 1);
+
+  const comSaida = categorias.filter(c=>totais[c].saida>0).sort((a,b)=>totais[b].saida-totais[a].saida);
+  const comEntrada = categorias.filter(c=>totais[c].entrada>0).sort((a,b)=>totais[b].entrada-totais[a].entrada);
+
+  if(comSaida.length){
+    const h = document.createElement('div');
+    h.className='label';
+    h.style.marginBottom='12px';
+    h.textContent = 'Saídas por categoria';
+    cont.appendChild(h);
+    comSaida.forEach(c=>{
+      const pct = (totais[c].saida / maxSaida) * 100;
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML = `
+        <div class="cat-row-top">
+          <span class="cat-row-nome">${c}</span>
+          <span class="cat-row-valor">${fmtMoeda(totais[c].saida)}</span>
+        </div>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%"></div></div>`;
+      cont.appendChild(row);
+    });
+  }
+
+  if(comEntrada.length){
+    const h2 = document.createElement('div');
+    h2.className='label';
+    h2.style.margin='20px 0 12px';
+    h2.textContent = 'Entradas por categoria';
+    cont.appendChild(h2);
+    comEntrada.forEach(c=>{
+      const pct = (totais[c].entrada / maxEntrada) * 100;
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML = `
+        <div class="cat-row-top">
+          <span class="cat-row-nome">${c}</span>
+          <span class="cat-row-valor">${fmtMoeda(totais[c].entrada)}</span>
+        </div>
+        <div class="cat-bar-bg"><div class="cat-bar-fill entrada" style="width:${pct}%"></div></div>`;
+      cont.appendChild(row);
+    });
+  }
+}
+
+function renderLancamentos(){
+  const busca = document.getElementById('buscaInput').value.toLowerCase();
+  const doMes = lancamentos.filter(l=>{
+    const d = new Date(l.data + 'T00:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  });
+
+  let entradas=0, saidas=0;
+  doMes.forEach(l=>{
+    if(l.tipo==='entrada') entradas += Number(l.valor);
+    else saidas += Number(l.valor);
+  });
+  document.getElementById('totalEntradas').textContent = fmtMoeda(entradas);
+  document.getElementById('totalSaidas').textContent = fmtMoeda(saidas);
+  document.getElementById('saldoPeriodo').textContent = fmtMoeda(entradas - saidas);
+
+  let filtrados = doMes.filter(l=>{
+    if(filtroTipo!=='todos' && l.tipo!==filtroTipo) return false;
+    if(filtroAtual!=='todos' && l.status!==filtroAtual) return false;
+    if(busca && !l.descricao.toLowerCase().includes(busca)) return false;
+    return true;
+  });
+
+  filtrados.sort((a,b)=> b.data.localeCompare(a.data));
+
+  const grupos = {};
+  filtrados.forEach(l=>{
+    if(!grupos[l.data]) grupos[l.data]=[];
+    grupos[l.data].push(l);
+  });
+
+  const cont = document.getElementById('listaLancamentos');
+  cont.innerHTML='';
+
+  if(filtrados.length===0){
+    cont.innerHTML = '<div class="empty">Nenhum lançamento encontrado</div>';
+    return;
+  }
+
+  Object.keys(grupos).sort().reverse().forEach(data=>{
+    const itens = grupos[data];
+    const totalDia = itens.reduce((s,l)=> s + (l.tipo==='entrada'? Number(l.valor): -Number(l.valor)), 0);
+    const div = document.createElement('div');
+    div.className='day-group';
+    const d = new Date(data+'T00:00:00');
+    const dataFmt = d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'});
+    div.innerHTML = `<div class="day-header"><span>${dataFmt}</span><span class="${totalDia>=0?'green':'red'}">${fmtMoeda(totalDia)}</span></div>`;
+    itens.forEach(l=>{
+      const statusLabel = {pago:'PAGO', a_pagar:'A PAGAR', recebido:'RECEBIDO', a_receber:'A RECEBER'}[l.status] || '';
+      const badgeClass = (l.status==='pago'||l.status==='recebido') ? 'pago':'pendente';
+      const item = document.createElement('div');
+      item.className='item';
+      item.onclick = ()=> abrirModalLancamento(l.id);
+      item.innerHTML = `
+        <div class="dot ${l.tipo}"></div>
+        <div class="item-info">
+          <div class="item-desc">${l.descricao}</div>
+          <div class="item-cat">${l.categoria}</div>
+        </div>
+        <div class="item-right">
+          <div class="item-value ${l.tipo==='entrada'?'green':'red'}">${l.tipo==='entrada'?'+':'-'} ${fmtMoeda(Number(l.valor))}</div>
+          <div class="badge ${badgeClass}">${statusLabel}</div>
+        </div>`;
+      div.appendChild(item);
+    });
+    cont.appendChild(div);
+  });
+}
+
+function setTipo(t){
+  tipoSelecionado = t;
+  document.getElementById('btnEntrada').className = t==='entrada' ? 'active-entrada' : '';
+  document.getElementById('btnSaida').className = t==='saida' ? 'active-saida' : '';
+  const statusSel = document.getElementById('fStatus');
+  statusSel.innerHTML='';
+  const opcoes = t==='entrada' ? [['recebido','Recebido'],['a_receber','A receber']] : [['pago','Pago'],['a_pagar','A pagar']];
+  opcoes.forEach(([v,l])=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=l;
+    statusSel.appendChild(o);
+  });
+}
+
+function abrirModalLancamento(id){
+  editandoLancId = id || null;
+  document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
+  document.getElementById('btnExcluirLanc').style.display = id ? 'block' : 'none';
+  if(id){
+    const l = lancamentos.find(x=>x.id===id);
+    setTipo(l.tipo);
+    document.getElementById('fDescricao').value = l.descricao;
+    document.getElementById('fValor').value = l.valor;
+    document.getElementById('fCategoria').value = l.categoria;
+    document.getElementById('fData').value = l.data;
+    document.getElementById('fStatus').value = l.status;
+  } else {
+    setTipo('entrada');
+    document.getElementById('fDescricao').value='';
+    document.getElementById('fValor').value='';
+    document.getElementById('fCategoria').value=CATEGORIAS[0];
+    document.getElementById('fData').value = new Date().toISOString().slice(0,10);
+  }
+  document.getElementById('modalLancamento').classList.add('open');
+}
+function fecharModalLancamento(){
+  document.getElementById('modalLancamento').classList.remove('open');
+}
+
+function salvarLancamento(){
+  const desc = document.getElementById('fDescricao').value.trim();
+  const valor = parseFloat(document.getElementById('fValor').value);
+  if(!desc || isNaN(valor) || valor<=0){
+    mostrarToast('Preencha descrição e valor válido');
+    return;
+  }
+  const dados = {
+    descricao: desc,
+    valor: valor,
+    tipo: tipoSelecionado,
+    categoria: document.getElementById('fCategoria').value,
+    data: document.getElementById('fData').value,
+    status: document.getElementById('fStatus').value
+  };
+  const salvar = editandoLancId
+    ? db.collection('lancamentos').doc(editandoLancId).update(dados)
+    : db.collection('lancamentos').add({...dados, criadoEm: firebase.firestore.FieldValue.serverTimestamp()});
+  salvar.then(()=>{
+    fecharModalLancamento();
+    mostrarToast('Lançamento salvo');
+  }).catch(()=> mostrarToast('Erro ao salvar — confira a conexão'));
+}
+
+function excluirLancamento(){
+  if(!editandoLancId) return;
+  db.collection('lancamentos').doc(editandoLancId).delete().then(()=>{
+    fecharModalLancamento();
+    mostrarToast('Lançamento excluído');
+  });
+}
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+document.getElementById('fab').addEventListener('click', function(){
+  abrirModalLancamento();
+});
+</script>
+</body>
+</html>
