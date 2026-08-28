@@ -188,7 +188,7 @@
     </div>
     <div class="field">
       <label>Valor (R$)</label>
-      <input id="fValor" type="number" step="0.01" placeholder="0,00">
+      <input id="fValor" type="text" inputmode="numeric" placeholder="0,00" oninput="formatarValor(this)">
     </div>
     <div class="field">
       <label>Categoria</label>
@@ -493,6 +493,19 @@ function setTipo(t){
   });
 }
 
+function formatarValor(el){
+  let digitos = el.value.replace(/\D/g,'');
+  if(digitos === '') digitos = '0';
+  digitos = digitos.replace(/^0+(?=\d)/,'');
+  const num = parseInt(digitos, 10) / 100;
+  el.value = num.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function valorParaNumero(texto){
+  if(!texto) return NaN;
+  return parseFloat(texto.replace(/\./g,'').replace(',', '.'));
+}
+
 function abrirModalLancamento(id){
   editandoLancId = id || null;
   document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
@@ -502,7 +515,7 @@ function abrirModalLancamento(id){
     const l = lancamentos.find(x=>x.id===id);
     setTipo(l.tipo);
     document.getElementById('fDescricao').value = l.descricao;
-    document.getElementById('fValor').value = l.valor;
+    document.getElementById('fValor').value = Number(l.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
     document.getElementById('fCategoria').value = l.categoria;
     document.getElementById('fData').value = l.data;
     document.getElementById('fStatus').value = l.status;
@@ -521,7 +534,7 @@ function fecharModalLancamento(){
 
 function salvarLancamento(){
   const desc = document.getElementById('fDescricao').value.trim();
-  const valor = parseFloat(document.getElementById('fValor').value);
+  const valor = valorParaNumero(document.getElementById('fValor').value);
   if(!desc || isNaN(valor) || valor<=0){
     mostrarToast('Preencha descrição e valor válido');
     return;
