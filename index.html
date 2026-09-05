@@ -325,6 +325,33 @@ const CATEGORIAS = [
   "Presentes/Doações","Salário/Renda","Renda Extra","Outros"
 ];
 
+const CORES_CATEGORIA = {
+  "Moradia": "#f59e0b",
+  "Telefone/Internet": "#38bdf8",
+  "Manutenção da Casa": "#a78bfa",
+  "Alimentação": "#fb923c",
+  "Transporte": "#60a5fa",
+  "Saúde": "#f87171",
+  "Beleza/Estética": "#f472b6",
+  "Lazer": "#facc15",
+  "Viagem": "#22d3ee",
+  "Educação": "#4ade80",
+  "Compras": "#c084fc",
+  "Assinaturas": "#fb7185",
+  "Cartão de Crédito": "#94a3b8",
+  "Empréstimo/Financiamento": "#ef4444",
+  "Impostos/Taxas": "#eab308",
+  "Pets": "#2dd4bf",
+  "Presentes/Doações": "#f97316",
+  "Salário/Renda": "#34d399",
+  "Renda Extra": "#22c55e",
+  "Outros": "#9ca3af"
+};
+
+function corCategoria(nome){
+  return CORES_CATEGORIA[nome] || '#8a8a8a';
+}
+
 let lancamentos = [];
 let contas = [];
 let transferencias = [];
@@ -697,14 +724,15 @@ function renderCategorias(){
     cont.appendChild(h);
     comSaida.forEach(c=>{
       const pct = (totais[c].saida / maxSaida) * 100;
+      const cor = corCategoria(c);
       const row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML = `
         <div class="cat-row-top">
-          <span class="cat-row-nome">${c}</span>
+          <span class="cat-row-nome"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${cor};margin-right:8px;"></span>${c}</span>
           <span class="cat-row-valor">${fmtMoeda(totais[c].saida)}</span>
         </div>
-        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%"></div></div>`;
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%; background:${cor};"></div></div>`;
       cont.appendChild(row);
     });
   }
@@ -717,14 +745,15 @@ function renderCategorias(){
     cont.appendChild(h2);
     comEntrada.forEach(c=>{
       const pct = (totais[c].entrada / maxEntrada) * 100;
+      const cor = corCategoria(c);
       const row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML = `
         <div class="cat-row-top">
-          <span class="cat-row-nome">${c}</span>
+          <span class="cat-row-nome"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${cor};margin-right:8px;"></span>${c}</span>
           <span class="cat-row-valor">${fmtMoeda(totais[c].entrada)}</span>
         </div>
-        <div class="cat-bar-bg"><div class="cat-bar-fill entrada" style="width:${pct}%"></div></div>`;
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%; background:${cor};"></div></div>`;
       cont.appendChild(row);
     });
   }
@@ -784,7 +813,7 @@ function renderLancamentos(){
       item.className='item';
       item.onclick = ()=> abrirModalLancamento(l.id);
       item.innerHTML = `
-        <div class="dot ${l.tipo}"></div>
+        <div class="dot" style="background:${corCategoria(l.categoria)};"></div>
         <div class="item-info">
           <div class="item-desc">${l.descricao}</div>
           <div class="item-cat">${l.categoria}${l.conta ? ' · '+l.conta : ''}</div>
