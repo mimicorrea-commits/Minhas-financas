@@ -65,7 +65,8 @@
   .item-right{text-align:right; flex-shrink:0;}
   .item-value{font-size:15px; font-weight:600;}
   .badge{display:inline-block; margin-top:6px; font-size:10px; padding:3px 9px; border-radius:100px; font-weight:600; letter-spacing:.5px;}
-  .badge.pago{background:var(--accent-dim); color:var(--accent);}
+  .badge.recebido{background:var(--accent-dim); color:var(--accent);}
+  .badge.pago-saida{background:var(--danger-dim); color:var(--danger);}
   .badge.pendente{background:rgba(255,255,255,0.08); color:var(--text-dim);}
   .card.filtro-ativo{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .cat-row{margin-bottom:16px;}
@@ -462,7 +463,7 @@ function renderLancamentos(){
     div.innerHTML = `<div class="day-header"><span>${dataFmt}</span><span class="${totalDia>=0?'green':'red'}">${fmtMoeda(totalDia)}</span></div>`;
     itens.forEach(l=>{
       const statusLabel = {pago:'PAGO', a_pagar:'A PAGAR', recebido:'RECEBIDO', a_receber:'A RECEBER'}[l.status] || '';
-      const badgeClass = (l.status==='pago'||l.status==='recebido') ? 'pago':'pendente';
+      const badgeClass = l.status==='recebido' ? 'recebido' : l.status==='pago' ? 'pago-saida' : 'pendente';
       const item = document.createElement('div');
       item.className='item';
       item.onclick = ()=> abrirModalLancamento(l.id);
