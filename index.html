@@ -306,6 +306,19 @@
   </div>
 </div>
 
+<!-- Modal Confirmar Lote -->
+<div class="modal-overlay" id="modalLote">
+  <div class="modal">
+    <h2>Confirmar contas</h2>
+    <div style="font-size:12px; color:var(--text-dim); margin-bottom:14px;">Confere o banco de cada lançamento antes de marcar como pago/recebido.</div>
+    <div id="listaLote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="fecharModalLote()">Cancelar</button>
+      <button class="btn btn-primary" onclick="executarLote()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -873,21 +886,46 @@ function confirmarLote(){
     mostrarToast('Nenhum lançamento selecionado');
     return;
   }
-  const batch = db.batch();
-  let algumInvalido = false;
+  const cont = document.getElementById('listaLote');
+  cont.innerHTML = '';
   selecionados.forEach(id=>{
     const l = lancamentos.find(x=>x.id===id);
     if(!l) return;
-    if(l.status==='a_pagar' || l.status==='pago'){
-      batch.update(db.collection('lancamentos').doc(id), {status: 'pago'});
-    } else if(l.status==='a_receber' || l.status==='recebido'){
-      batch.update(db.collection('lancamentos').doc(id), {status: 'recebido'});
-    } else {
-      algumInvalido = true;
-    }
+    const novoStatus = l.tipo==='saida' ? 'pago' : 'recebido';
+    const row = document.createElement('div');
+    row.className = 'field';
+    row.innerHTML = `
+      <label>${l.descricao} — ${fmtMoeda(Number(l.valor))} (vira ${novoStatus==='pago'?'Pago':'Recebido'})</label>
+      <select id="lote-conta-${l.id}"></select>`;
+    cont.appendChild(row);
+    const sel = row.querySelector('select');
+    contas.forEach(c=>{
+      const o = document.createElement('option');
+      o.value = c.nome; o.textContent = c.nome;
+      sel.appendChild(o);
+    });
+    sel.value = l.conta || (contas[0] ? contas[0].nome : '');
+  });
+  document.getElementById('modalLote').classList.add('open');
+}
+
+function fecharModalLote(){
+  document.getElementById('modalLote').classList.remove('open');
+}
+
+function executarLote(){
+  const batch = db.batch();
+  selecionados.forEach(id=>{
+    const l = lancamentos.find(x=>x.id===id);
+    if(!l) return;
+    const sel = document.getElementById('lote-conta-'+id);
+    const contaEscolhida = sel ? sel.value : l.conta;
+    const novoStatus = l.tipo==='saida' ? 'pago' : 'recebido';
+    batch.update(db.collection('lancamentos').doc(id), {status: novoStatus, conta: contaEscolhida});
   });
   batch.commit().then(()=>{
     mostrarToast('Lançamentos atualizados');
+    fecharModalLote();
     alternarModoSelecao();
   }).catch(()=> mostrarToast('Erro ao atualizar — confira a conexão'));
 }
