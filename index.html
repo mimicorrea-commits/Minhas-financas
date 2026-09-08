@@ -56,6 +56,11 @@
   .day-group{margin-bottom:14px;}
   .day-header{display:flex; justify-content:space-between; font-size:11px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; padding:0 2px;}
   .item{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:8px; cursor:pointer;}
+  .item.selecionado{border-color:var(--accent); background:var(--accent-dim);}
+  .item-checkbox{width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .item-checkbox.marcado{background:var(--accent); border-color:var(--accent); color:#04120c; font-size:13px; font-weight:700;}
+  .filter-chip#btnModoSelecao{margin-left:auto;}
+  .filter-chip#btnModoSelecao.active{background:#fff; color:#0a0a0a; border-color:#fff;}
   .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
   .dot.entrada{background:var(--accent);}
   .dot.saida{background:var(--danger);}
@@ -188,11 +193,19 @@
       <div class="filter-chip" data-f="a_pagar" onclick="setFiltro('a_pagar')">A pagar</div>
       <div class="filter-chip" data-f="recebido" onclick="setFiltro('recebido')">Recebido</div>
       <div class="filter-chip" data-f="a_receber" onclick="setFiltro('a_receber')">A receber</div>
+      <div class="filter-chip" id="btnModoSelecao" onclick="alternarModoSelecao()">Selecionar</div>
     </div>
 
     <div id="listaLancamentos"></div>
     </div>
 
+    <div id="barraSelecao" style="display:none; position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); padding:14px 16px; z-index:40;">
+      <div style="max-width:480px; margin:0 auto; display:flex; align-items:center; gap:10px;">
+        <span id="qtdSelecionados" style="font-size:13px; color:var(--text-dim); flex:1;">0 selecionados</span>
+        <button class="btn btn-secondary" style="flex:none; padding:10px 16px;" onclick="alternarModoSelecao()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:none; padding:10px 16px;" onclick="confirmarLote()">Marcar</button>
+      </div>
+    </div>
     <div id="blocoCategoria" style="display:none;">
       <div id="listaCategorias"></div>
     </div>
@@ -327,22 +340,22 @@ const CATEGORIAS = [
 
 const CORES_CATEGORIA = {
   "Moradia": "#8256db",
-  "Telefone/Internet": "#9b56db",
-  "Manutenção da Casa": "#b456db",
-  "Alimentação": "#cc56db",
-  "Transporte": "#db56d0",
-  "Saúde": "#db56b8",
-  "Beleza/Estética": "#db569f",
-  "Lazer": "#db5686",
-  "Viagem": "#db566e",
-  "Educação": "#db5756",
-  "Compras": "#db7056",
-  "Assinaturas": "#db8956",
-  "Cartão de Crédito": "#dba256",
-  "Empréstimo/Financiamento": "#dbba56",
-  "Impostos/Taxas": "#dbd356",
-  "Pets": "#cadb56",
-  "Presentes/Doações": "#b1db56",
+  "Telefone/Internet": "#9856db",
+  "Manutenção da Casa": "#af56db",
+  "Alimentação": "#c556db",
+  "Transporte": "#db56db",
+  "Saúde": "#db56c5",
+  "Beleza/Estética": "#db56af",
+  "Lazer": "#db5699",
+  "Viagem": "#db5682",
+  "Educação": "#db566c",
+  "Compras": "#db5656",
+  "Assinaturas": "#db6c56",
+  "Cartão de Crédito": "#db8256",
+  "Empréstimo/Financiamento": "#db9956",
+  "Impostos/Taxas": "#dbaf56",
+  "Pets": "#dbc556",
+  "Presentes/Doações": "#dbdb56",
   "Salário/Renda": "#34d399",
   "Renda Extra": "#22c55e",
   "Rendimentos": "#38bdf8",
@@ -357,6 +370,8 @@ let lancamentos = [];
 let contas = [];
 let transferencias = [];
 let filtroAtual = "todos";
+let modoSelecao = false;
+let selecionados = new Set();
 let filtroTipo = "todos";
 let visaoAtual = "lista";
 let mesAtual = new Date().getMonth();
@@ -811,10 +826,12 @@ function renderLancamentos(){
       const statusLabel = {pago:'PAGO', a_pagar:'A PAGAR', recebido:'RECEBIDO', a_receber:'A RECEBER'}[l.status] || '';
       const badgeClass = l.status==='recebido' ? 'recebido' : l.status==='pago' ? 'pago-saida' : 'pendente';
       const item = document.createElement('div');
-      item.className='item';
-      item.onclick = ()=> abrirModalLancamento(l.id);
+      const marcado = selecionados.has(l.id);
+      item.className = 'item' + (marcado ? ' selecionado' : '');
+      item.onclick = ()=> modoSelecao ? alternarSelecionado(l.id) : abrirModalLancamento(l.id);
+      const checkboxHtml = modoSelecao ? `<div class="item-checkbox ${marcado?'marcado':''}">${marcado?'✓':''}</div>` : `<div class="dot" style="background:${corCategoria(l.categoria)};"></div>`;
       item.innerHTML = `
-        <div class="dot" style="background:${corCategoria(l.categoria)};"></div>
+        ${checkboxHtml}
         <div class="item-info">
           <div class="item-desc">${l.descricao}</div>
           <div class="item-cat">${l.categoria}${l.conta ? ' · '+l.conta : ''}</div>
@@ -827,6 +844,47 @@ function renderLancamentos(){
     });
     cont.appendChild(div);
   });
+}
+
+function alternarModoSelecao(){
+  modoSelecao = !modoSelecao;
+  selecionados.clear();
+  document.getElementById('btnModoSelecao').classList.toggle('active', modoSelecao);
+  document.getElementById('btnModoSelecao').textContent = modoSelecao ? 'Cancelar seleção' : 'Selecionar';
+  document.getElementById('barraSelecao').style.display = modoSelecao ? 'block' : 'none';
+  document.getElementById('fab').style.display = modoSelecao ? 'none' : 'block';
+  renderLancamentos();
+}
+
+function alternarSelecionado(id){
+  if(selecionados.has(id)) selecionados.delete(id);
+  else selecionados.add(id);
+  document.getElementById('qtdSelecionados').textContent = selecionados.size + ' selecionado' + (selecionados.size===1?'':'s');
+  renderLancamentos();
+}
+
+function confirmarLote(){
+  if(selecionados.size===0){
+    mostrarToast('Nenhum lançamento selecionado');
+    return;
+  }
+  const batch = db.batch();
+  let algumInvalido = false;
+  selecionados.forEach(id=>{
+    const l = lancamentos.find(x=>x.id===id);
+    if(!l) return;
+    if(l.status==='a_pagar' || l.status==='pago'){
+      batch.update(db.collection('lancamentos').doc(id), {status: 'pago'});
+    } else if(l.status==='a_receber' || l.status==='recebido'){
+      batch.update(db.collection('lancamentos').doc(id), {status: 'recebido'});
+    } else {
+      algumInvalido = true;
+    }
+  });
+  batch.commit().then(()=>{
+    mostrarToast('Lançamentos atualizados');
+    alternarModoSelecao();
+  }).catch(()=> mostrarToast('Erro ao atualizar — confira a conexão'));
 }
 
 function setTipo(t){
