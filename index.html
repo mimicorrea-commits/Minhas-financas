@@ -256,7 +256,7 @@
     <div class="field" id="campoParcelas" style="display:none;">
       <label>Número de parcelas</label>
       <input id="fNumParcelas" type="number" min="2" max="48" value="2">
-      <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">O valor digitado acima é o valor de CADA parcela. Vou lançar uma em cada mês a partir da data escolhida.</div>
+      <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">O valor digitado acima é o valor de CADA parcela. Vou lançar uma em cada mês a partir da data escolhida. Se estiver editando um lançamento já existente, ele vira a 1ª parcela e as demais são criadas nos meses seguintes.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
@@ -973,7 +973,7 @@ function abrirModalLancamento(id){
   document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
   document.getElementById('btnExcluirLanc').style.display = id ? 'block' : 'none';
   document.getElementById('avisoExcluirLanc').style.display = id ? 'block' : 'none';
-  document.getElementById('campoCheckboxParcela').style.display = id ? 'none' : 'block';
+  document.getElementById('campoCheckboxParcela').style.display = 'block';
   document.getElementById('campoParcelas').style.display = 'none';
   document.getElementById('fParcelado').checked = false;
   document.getElementById('fNumParcelas').value = 2;
@@ -1008,7 +1008,7 @@ function salvarLancamento(){
     return;
   }
 
-  const parcelado = !editandoLancId && document.getElementById('fParcelado').checked;
+  const parcelado = document.getElementById('fParcelado').checked;
   const numParcelas = parseInt(document.getElementById('fNumParcelas').value, 10) || 2;
 
   const base = {
@@ -1034,10 +1034,13 @@ function salvarLancamento(){
         status: i===0 ? base.status : statusPendente,
         grupoParcelamento: grupoId,
         parcela: i+1,
-        totalParcelas: numParcelas,
-        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        totalParcelas: numParcelas
       };
-      promessas.push(db.collection('lancamentos').add(dados));
+      if(i===0 && editandoLancId){
+        promessas.push(db.collection('lancamentos').doc(editandoLancId).update(dados));
+      } else {
+        promessas.push(db.collection('lancamentos').add({...dados, criadoEm: firebase.firestore.FieldValue.serverTimestamp()}));
+      }
     }
     Promise.all(promessas).then(()=>{
       fecharModalLancamento();
