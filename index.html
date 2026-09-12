@@ -177,6 +177,17 @@
       </div>
     </div>
 
+    <div class="row-2">
+      <div class="card" onclick="setFiltro('a_pagar')" style="cursor:pointer;">
+        <div class="label">Pendente a pagar</div>
+        <div class="mid-value" id="totalAPagar" style="color:var(--text-dim);">R$ 0,00</div>
+      </div>
+      <div class="card" onclick="setFiltro('a_receber')" style="cursor:pointer;">
+        <div class="label">Pendente a receber</div>
+        <div class="mid-value" id="totalAReceber" style="color:var(--text-dim);">R$ 0,00</div>
+      </div>
+    </div>
+
     <div class="tabs" style="margin-bottom:16px;">
       <div class="tab active" id="visaoLista" onclick="mudarVisao('lista')">Lista</div>
       <div class="tab" id="visaoCategoria" onclick="mudarVisao('categoria')">Por categoria</div>
@@ -808,14 +819,20 @@ function renderLancamentos(){
     return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
   });
 
-  let entradas=0, saidas=0;
+  let entradas=0, saidas=0, aPagar=0, aReceber=0;
   doMes.forEach(l=>{
-    if(l.tipo==='entrada') entradas += Number(l.valor);
-    else saidas += Number(l.valor);
+    if(l.tipo==='entrada' && l.status==='recebido') entradas += Number(l.valor);
+    if(l.tipo==='saida' && l.status==='pago') saidas += Number(l.valor);
+    if(l.tipo==='saida' && l.status==='a_pagar') aPagar += Number(l.valor);
+    if(l.tipo==='entrada' && l.status==='a_receber') aReceber += Number(l.valor);
   });
   document.getElementById('totalEntradas').textContent = fmtMoeda(entradas);
   document.getElementById('totalSaidas').textContent = fmtMoeda(saidas);
-  document.getElementById('saldoPeriodo').textContent = fmtMoeda(entradas - saidas);
+  document.getElementById('totalAPagar').textContent = fmtMoeda(aPagar);
+  document.getElementById('totalAReceber').textContent = fmtMoeda(aReceber);
+  const saldoPeriodoEl = document.getElementById('saldoPeriodo');
+  saldoPeriodoEl.textContent = fmtMoeda(entradas - saidas);
+  saldoPeriodoEl.className = 'big-value ' + ((entradas - saidas) >= 0 ? 'green' : 'red');
 
   let filtrados = doMes.filter(l=>{
     if(filtroTipo!=='todos' && l.tipo!==filtroTipo) return false;
