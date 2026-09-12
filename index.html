@@ -247,6 +247,17 @@
       <label>Status</label>
       <select id="fStatus"></select>
     </div>
+    <div class="field" id="campoCheckboxParcela">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; letter-spacing:normal; font-size:14px; color:var(--text);">
+        <input type="checkbox" id="fParcelado" onchange="document.getElementById('campoParcelas').style.display=this.checked?'block':'none'" style="width:auto;">
+        Compra parcelada
+      </label>
+    </div>
+    <div class="field" id="campoParcelas" style="display:none;">
+      <label>Número de parcelas</label>
+      <input id="fNumParcelas" type="number" min="2" max="48" value="2">
+      <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">O valor digitado acima é o valor de CADA parcela. Vou lançar uma em cada mês a partir da data escolhida.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button>
@@ -961,6 +972,10 @@ function abrirModalLancamento(id){
   document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
   document.getElementById('btnExcluirLanc').style.display = id ? 'block' : 'none';
   document.getElementById('avisoExcluirLanc').style.display = id ? 'block' : 'none';
+  document.getElementById('campoCheckboxParcela').style.display = id ? 'none' : 'block';
+  document.getElementById('campoParcelas').style.display = 'none';
+  document.getElementById('fParcelado').checked = false;
+  document.getElementById('fNumParcelas').value = 2;
   popularSelectsContas();
   if(id){
     const l = lancamentos.find(x=>x.id===id);
@@ -991,15 +1006,46 @@ function salvarLancamento(){
     mostrarToast('Preencha descrição e valor válido');
     return;
   }
-  const dados = {
-    descricao: desc,
+
+  const parcelado = !editandoLancId && document.getElementById('fParcelado').checked;
+  const numParcelas = parseInt(document.getElementById('fNumParcelas').value, 10) || 2;
+
+  const base = {
     valor: valor,
     tipo: tipoSelecionado,
     categoria: document.getElementById('fCategoria').value,
     conta: document.getElementById('fConta').value,
-    data: document.getElementById('fData').value,
     status: document.getElementById('fStatus').value
   };
+
+  if(parcelado && numParcelas >= 2){
+    const dataBase = new Date(document.getElementById('fData').value + 'T00:00:00');
+    const statusPendente = tipoSelecionado==='saida' ? 'a_pagar' : 'a_receber';
+    const grupoId = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    const promessas = [];
+    for(let i=0; i<numParcelas; i++){
+      const dataParcela = new Date(dataBase.getFullYear(), dataBase.getMonth()+i, dataBase.getDate());
+      const dataStr = dataParcela.toISOString().slice(0,10);
+      const dados = {
+        ...base,
+        descricao: `${desc} (${i+1}/${numParcelas})`,
+        data: dataStr,
+        status: i===0 ? base.status : statusPendente,
+        grupoParcelamento: grupoId,
+        parcela: i+1,
+        totalParcelas: numParcelas,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      promessas.push(db.collection('lancamentos').add(dados));
+    }
+    Promise.all(promessas).then(()=>{
+      fecharModalLancamento();
+      mostrarToast(numParcelas + ' parcelas lançadas');
+    }).catch(()=> mostrarToast('Erro ao salvar — confira a conexão'));
+    return;
+  }
+
+  const dados = { ...base, descricao: desc, data: document.getElementById('fData').value };
   const salvar = editandoLancId
     ? db.collection('lancamentos').doc(editandoLancId).update(dados)
     : db.collection('lancamentos').add({...dados, criadoEm: firebase.firestore.FieldValue.serverTimestamp()});
