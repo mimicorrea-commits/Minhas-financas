@@ -212,10 +212,11 @@
     </div>
 
     <div id="barraSelecao" style="display:none; position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); padding:14px 16px; z-index:40;">
-      <div style="max-width:480px; margin:0 auto; display:flex; align-items:center; gap:10px;">
+      <div style="max-width:480px; margin:0 auto; display:flex; align-items:center; gap:8px;">
         <span id="qtdSelecionados" style="font-size:13px; color:var(--text-dim); flex:1;">0 selecionados</span>
-        <button class="btn btn-secondary" style="flex:none; padding:10px 16px;" onclick="alternarModoSelecao()">Cancelar</button>
-        <button class="btn btn-primary" style="flex:none; padding:10px 16px;" onclick="confirmarLote()">Marcar</button>
+        <button class="btn btn-secondary" style="flex:none; padding:10px 14px;" onclick="alternarModoSelecao()">Cancelar</button>
+        <button class="btn btn-secondary" style="flex:none; padding:10px 14px;" onclick="gerarLembreteLote()">🔔 Lembrete</button>
+        <button class="btn btn-primary" style="flex:none; padding:10px 14px;" onclick="confirmarLote()">Marcar</button>
       </div>
     </div>
     <div id="blocoCategoria" style="display:none;">
@@ -935,6 +936,82 @@ function alternarSelecionado(id){
   else selecionados.add(id);
   document.getElementById('qtdSelecionados').textContent = selecionados.size + ' selecionado' + (selecionados.size===1?'':'s');
   renderLancamentos();
+}
+
+function formatarDataICS(dataStr){
+  return dataStr.replace(/-/g,'');
+}
+
+function escaparICS(texto){
+  return String(texto).replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;').replace(/\n/g,'\\n');
+}
+
+function gerarConteudoICS(eventos){
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Minhas Financas//PT\r\nCALSCALE:GREGORIAN\r\n';
+  eventos.forEach(ev=>{
+    const dtStart = formatarDataICS(ev.dataStr);
+    const dFim = new Date(ev.dataStr+'T00:00:00');
+    dFim.setDate(dFim.getDate()+1);
+    const dtEnd = dFim.toISOString().slice(0,10).replace(/-/g,'');
+    const uid = Date.now().toString(36) + Math.random().toString(36).slice(2,8) + '@minhasfinancas';
+    const agora = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+    ics += 'BEGIN:VEVENT\r\n';
+    ics += 'UID:'+uid+'\r\n';
+    ics += 'DTSTAMP:'+agora+'\r\n';
+    ics += 'DTSTART;VALUE=DATE:'+dtStart+'\r\n';
+    ics += 'DTEND;VALUE=DATE:'+dtEnd+'\r\n';
+    ics += 'SUMMARY:'+escaparICS(ev.titulo)+'\r\n';
+    ics += 'DESCRIPTION:'+escaparICS(ev.descricao)+'\r\n';
+    ics += 'BEGIN:VALARM\r\n';
+    ics += 'ACTION:DISPLAY\r\n';
+    ics += 'DESCRIPTION:Lembrete de pagamento\r\n';
+    ics += 'TRIGGER:PT9H0M\r\n';
+    ics += 'END:VALARM\r\n';
+    ics += 'END:VEVENT\r\n';
+  });
+  ics += 'END:VCALENDAR\r\n';
+  return ics;
+}
+
+function baixarICS(nomeArquivo, conteudo){
+  const blob = new Blob([conteudo], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1500);
+}
+
+function gerarLembreteLote(){
+  if(selecionados.size===0){
+    mostrarToast('Nenhum lançamento selecionado');
+    return;
+  }
+  const itens = [...selecionados].map(id=> lancamentos.find(x=>x.id===id)).filter(Boolean);
+  const porData = {};
+  itens.forEach(l=>{
+    if(!porData[l.data]) porData[l.data] = [];
+    porData[l.data].push(l);
+  });
+  const eventos = Object.keys(porData).map(data=>{
+    const lista = porData[data];
+    const total = lista.reduce((s,l)=> s + Number(l.valor), 0);
+    const todosSaida = lista.every(l=> l.tipo==='saida');
+    const todosEntrada = lista.every(l=> l.tipo==='entrada');
+    const tipoLabel = todosSaida ? 'Contas a pagar' : todosEntrada ? 'A receber' : 'Lançamentos financeiros';
+    const linhas = lista.map(l=> `${l.descricao} - ${fmtMoeda(Number(l.valor))} (${l.conta||'sem conta'})`);
+    return {
+      titulo: `${tipoLabel} - ${fmtMoeda(total)} (${lista.length} ${lista.length===1?'item':'itens'})`,
+      descricao: linhas.join('\n'),
+      dataStr: data
+    };
+  });
+  const ics = gerarConteudoICS(eventos);
+  baixarICS('lembrete-contas.ics', ics);
+  mostrarToast('Arquivo baixado — abra ele pra adicionar ao Calendário');
 }
 
 function confirmarLote(){
