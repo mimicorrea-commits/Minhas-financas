@@ -896,7 +896,13 @@ function renderLancamentos(){
     div.className='day-group';
     const d = new Date(data+'T00:00:00');
     const dataFmt = d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'});
-    div.innerHTML = `<div class="day-header"><span>${dataFmt}</span><span class="${totalDia>=0?'green':'red'}">${fmtMoeda(totalDia)}</span></div>`;
+    const todosMarcados = modoSelecao && itens.every(l=> selecionados.has(l.id));
+    const headerStyle = modoSelecao ? 'cursor:pointer;' : '';
+    const headerHtml = `<div class="day-header" style="${headerStyle}" ${modoSelecao ? `onclick="alternarDiaInteiro('${data}')"` : ''}>
+      <span>${modoSelecao ? (todosMarcados ? '☑ ' : '☐ ') : ''}${dataFmt}</span>
+      <span class="${totalDia>=0?'green':'red'}">${fmtMoeda(totalDia)}</span>
+    </div>`;
+    div.innerHTML = headerHtml;
     itens.forEach(l=>{
       const statusLabel = {pago:'PAGO', a_pagar:'A PAGAR', recebido:'RECEBIDO', a_receber:'A RECEBER'}[l.status] || '';
       const badgeClass = l.status==='recebido' ? 'recebido' : l.status==='pago' ? 'pago-saida' : 'pendente';
@@ -905,10 +911,11 @@ function renderLancamentos(){
       item.className = 'item' + (marcado ? ' selecionado' : '');
       item.onclick = ()=> modoSelecao ? alternarSelecionado(l.id) : abrirModalLancamento(l.id);
       const checkboxHtml = modoSelecao ? `<div class="item-checkbox ${marcado?'marcado':''}">${marcado?'✓':''}</div>` : `<div class="dot" style="background:${corCategoria(l.categoria)};"></div>`;
+      const sinoHtml = l.lembreteGerado ? ' 🔔' : '';
       item.innerHTML = `
         ${checkboxHtml}
         <div class="item-info">
-          <div class="item-desc">${l.descricao}</div>
+          <div class="item-desc">${l.descricao}${sinoHtml}</div>
           <div class="item-cat">${l.categoria}${l.conta ? ' · '+l.conta : ''}</div>
         </div>
         <div class="item-right">
@@ -919,6 +926,20 @@ function renderLancamentos(){
     });
     cont.appendChild(div);
   });
+}
+
+function alternarDiaInteiro(data){
+  const doDia = lancamentos.filter(l=>{
+    const d = new Date(l.data + 'T00:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual && l.data===data;
+  });
+  const todosMarcados = doDia.every(l=> selecionados.has(l.id));
+  doDia.forEach(l=>{
+    if(todosMarcados) selecionados.delete(l.id);
+    else selecionados.add(l.id);
+  });
+  document.getElementById('qtdSelecionados').textContent = selecionados.size + ' selecionado' + (selecionados.size===1?'':'s');
+  renderLancamentos();
 }
 
 function alternarModoSelecao(){
@@ -1011,6 +1032,9 @@ function gerarLembreteLote(){
   });
   const ics = gerarConteudoICS(eventos);
   baixarICS('lembrete-contas.ics', ics);
+  const batch = db.batch();
+  itens.forEach(l=> batch.update(db.collection('lancamentos').doc(l.id), {lembreteGerado: true}));
+  batch.commit().catch(()=>{});
   mostrarToast('Arquivo baixado — abra ele pra adicionar ao Calendário');
 }
 
