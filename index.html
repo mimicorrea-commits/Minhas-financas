@@ -911,7 +911,7 @@ function renderLancamentos(){
       item.className = 'item' + (marcado ? ' selecionado' : '');
       item.onclick = ()=> modoSelecao ? alternarSelecionado(l.id) : abrirModalLancamento(l.id);
       const checkboxHtml = modoSelecao ? `<div class="item-checkbox ${marcado?'marcado':''}">${marcado?'✓':''}</div>` : `<div class="dot" style="background:${corCategoria(l.categoria)};"></div>`;
-      const sinoHtml = l.lembreteGerado ? ' 🔔' : '';
+      const sinoHtml = l.lembreteGerado ? ` <span onclick="event.stopPropagation(); limparSino('${l.id}');" title="Toque para remover" style="cursor:pointer;">🔔</span>` : '';
       item.innerHTML = `
         ${checkboxHtml}
         <div class="item-info">
@@ -925,6 +925,13 @@ function renderLancamentos(){
       div.appendChild(item);
     });
     cont.appendChild(div);
+  });
+}
+
+function limparSino(id){
+  if(!confirm('Remover o lembrete deste lançamento? Isso não apaga o evento do seu Calendário, só o sininho aqui no app.')) return;
+  db.collection('lancamentos').doc(id).update({lembreteGerado: false}).then(()=>{
+    mostrarToast('Lembrete desmarcado');
   });
 }
 
@@ -1199,6 +1206,14 @@ function salvarLancamento(){
   }
 
   const dados = { ...base, descricao: desc, data: document.getElementById('fData').value };
+
+  if(editandoLancId){
+    const original = lancamentos.find(x=>x.id===editandoLancId);
+    if(original && original.lembreteGerado && (original.data !== dados.data || Number(original.valor) !== dados.valor)){
+      dados.lembreteGerado = false;
+    }
+  }
+
   const salvar = editandoLancId
     ? db.collection('lancamentos').doc(editandoLancId).update(dados)
     : db.collection('lancamentos').add({...dados, criadoEm: firebase.firestore.FieldValue.serverTimestamp()});
