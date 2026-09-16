@@ -267,8 +267,9 @@
     </div>
     <div class="field" id="campoParcelas" style="display:none;">
       <label>Número de parcelas</label>
-      <input id="fNumParcelas" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 3" oninput="this.value=this.value.replace(/\D/g,'')">
-      <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">O valor digitado acima é o valor de CADA parcela. Vou lançar uma em cada mês a partir da data escolhida. Se estiver editando um lançamento já existente, ele vira a 1ª parcela e as demais são criadas nos meses seguintes.</div>
+      <input id="fNumParcelas" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 3" oninput="this.value=this.value.replace(/\D/g,''); gerarCamposParcelas();">
+      <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">O valor acima em "Valor (R$)" preenche todas as parcelas por padrão. Se alguma for diferente, ajusta ela na lista abaixo depois de digitar o número de parcelas.</div>
+      <div id="valoresParcelas" style="margin-top:12px;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
@@ -1120,6 +1121,20 @@ function valorParaNumero(texto){
   return parseFloat(texto.replace(/\./g,'').replace(',', '.'));
 }
 
+function gerarCamposParcelas(){
+  const n = parseInt(document.getElementById('fNumParcelas').value, 10);
+  const valorBase = document.getElementById('fValor').value;
+  const cont = document.getElementById('valoresParcelas');
+  cont.innerHTML = '';
+  if(!n || n < 2) return;
+  for(let i=1; i<=n; i++){
+    const row = document.createElement('div');
+    row.className = 'field';
+    row.innerHTML = `<label>Valor da parcela ${i}/${n}</label><input type="text" inputmode="numeric" class="valor-parcela-input" value="${valorBase||''}" oninput="formatarValor(this)">`;
+    cont.appendChild(row);
+  }
+}
+
 function abrirModalLancamento(id){
   editandoLancId = id || null;
   document.getElementById('modalLancTitulo').textContent = id ? 'Editar lançamento' : 'Novo lançamento';
@@ -1129,6 +1144,7 @@ function abrirModalLancamento(id){
   document.getElementById('campoParcelas').style.display = 'none';
   document.getElementById('fParcelado').checked = false;
   document.getElementById('fNumParcelas').value = '';
+  document.getElementById('valoresParcelas').innerHTML = '';
   popularSelectsContas();
   if(id){
     const l = lancamentos.find(x=>x.id===id);
@@ -1176,6 +1192,16 @@ function salvarLancamento(){
   };
 
   if(parcelado && numParcelas >= 2){
+    const inputsValor = document.querySelectorAll('#valoresParcelas .valor-parcela-input');
+    const valoresParcelas = [];
+    for(let i=0; i<numParcelas; i++){
+      const v = inputsValor[i] ? valorParaNumero(inputsValor[i].value) : valor;
+      if(isNaN(v) || v<=0){
+        mostrarToast(`Valor inválido na parcela ${i+1}`);
+        return;
+      }
+      valoresParcelas.push(v);
+    }
     const dataBase = new Date(document.getElementById('fData').value + 'T00:00:00');
     const statusPendente = tipoSelecionado==='saida' ? 'a_pagar' : 'a_receber';
     const grupoId = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -1185,6 +1211,7 @@ function salvarLancamento(){
       const dataStr = dataParcela.toISOString().slice(0,10);
       const dados = {
         ...base,
+        valor: valoresParcelas[i],
         descricao: `${desc} (${i+1}/${numParcelas})`,
         data: dataStr,
         status: i===0 ? base.status : statusPendente,
