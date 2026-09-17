@@ -831,8 +831,22 @@ function limparFiltroCategoria(){
   renderLancamentos();
 }
 
-function renderLancamentos(){
+function obterLancamentosFiltrados(){
   const busca = document.getElementById('buscaInput').value.toLowerCase();
+  const doMes = lancamentos.filter(l=>{
+    const d = new Date(l.data + 'T00:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  });
+  return doMes.filter(l=>{
+    if(filtroTipo!=='todos' && l.tipo!==filtroTipo) return false;
+    if(filtroAtual!=='todos' && l.status!==filtroAtual) return false;
+    if(filtroCategoria && l.categoria!==filtroCategoria) return false;
+    if(busca && !l.descricao.toLowerCase().includes(busca)) return false;
+    return true;
+  });
+}
+
+function renderLancamentos(){
   const doMes = lancamentos.filter(l=>{
     const d = new Date(l.data + 'T00:00:00');
     return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
@@ -853,13 +867,7 @@ function renderLancamentos(){
   saldoPeriodoEl.textContent = fmtMoeda(entradas - saidas);
   saldoPeriodoEl.className = 'big-value ' + ((entradas - saidas) >= 0 ? 'green' : 'red');
 
-  let filtrados = doMes.filter(l=>{
-    if(filtroTipo!=='todos' && l.tipo!==filtroTipo) return false;
-    if(filtroAtual!=='todos' && l.status!==filtroAtual) return false;
-    if(filtroCategoria && l.categoria!==filtroCategoria) return false;
-    if(busca && !l.descricao.toLowerCase().includes(busca)) return false;
-    return true;
-  });
+  let filtrados = obterLancamentosFiltrados();
 
   filtrados.sort((a,b)=> b.data.localeCompare(a.data));
 
@@ -937,10 +945,7 @@ function limparSino(id){
 }
 
 function alternarDiaInteiro(data){
-  const doDia = lancamentos.filter(l=>{
-    const d = new Date(l.data + 'T00:00:00');
-    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual && l.data===data;
-  });
+  const doDia = obterLancamentosFiltrados().filter(l=> l.data===data);
   const todosMarcados = doDia.every(l=> selecionados.has(l.id));
   doDia.forEach(l=>{
     if(todosMarcados) selecionados.delete(l.id);
